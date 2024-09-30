@@ -1,0 +1,81 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "For_each": {
+                "actions": {
+                    "Get_file_content": {
+                        "inputs": {
+                            "host": {
+                                "connection": {
+                                    "referenceName": "sharepointonline"
+                                }
+                            },
+                            "method": "get",
+                            "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://myedgeorg.sharepoint.com/sites/test'))}/files/@{encodeURIComponent(items('For_each')?['Id'])}/content",
+                            "queries": {
+                                "inferContentType": true
+                            }
+                        },
+                        "type": "ApiConnection"
+                    },
+                    "Upload_blob_to_storage_container": {
+                        "inputs": {
+                            "parameters": {
+                                "blobName": "@item()?['DisplayName']",
+                                "containerName": "cptdazsp2blob",
+                                "content": "@body('Get_file_content')"
+                            },
+                            "serviceProviderConfiguration": {
+                                "connectionName": "AzureBlob",
+                                "operationId": "uploadBlob",
+                                "serviceProviderId": "/serviceProviders/AzureBlob"
+                            }
+                        },
+                        "runAfter": {
+                            "Get_file_content": [
+                                "SUCCEEDED"
+                            ]
+                        },
+                        "type": "ServiceProvider"
+                    }
+                },
+                "foreach": "@body('List_folder')",
+                "runAfter": {
+                    "List_folder": [
+                        "SUCCEEDED"
+                    ]
+                },
+                "type": "foreach"
+            },
+            "List_folder": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "referenceName": "sharepointonline"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/datasets/@{encodeURIComponent(encodeURIComponent('https://myedgeorg.sharepoint.com/sites/test'))}/folders/@{encodeURIComponent('%252fShared%2bDocuments')}"
+                },
+                "metadata": {
+                    "%252fShared%2bDocuments": "/Shared Documents"
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "When_a_HTTP_request_is_received": {
+                "inputs": {
+                    "method": "GET"
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "kind": "Stateful"
+}
